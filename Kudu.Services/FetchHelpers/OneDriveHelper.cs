@@ -11,6 +11,7 @@ using Kudu.Contracts.Settings;
 using Kudu.Contracts.Tracing;
 using Kudu.Core;
 using Kudu.Core.Deployment;
+using Kudu.Core.Infrastructure;
 using Kudu.Core.Tracing;
 
 namespace Kudu.Services.FetchHelpers
@@ -368,15 +369,15 @@ namespace Kudu.Services.FetchHelpers
 
             try
             {
-                if (File.Exists(fullPath))
+                if (FileSystemHelpers.FileExists(fullPath))
                 {
-                    File.Delete(fullPath);
+                    FileSystemHelpers.DeleteFile(fullPath);
                     TraceMessage("Deleted file {0}", change.Path);
                     LogMessage(Resources.OneDriveDeletedFile, fullPath);
                 }
-                else if (Directory.Exists(fullPath))
+                else if (FileSystemHelpers.DirectoryExists(fullPath))
                 {
-                    Directory.Delete(fullPath, recursive: true);
+                    FileSystemHelpers.DeleteDirectorySafe(fullPath, ignoreErrors: false);
                     TraceMessage("Deleted directory {0}", change.Path);
                     LogMessage(Resources.OneDriveDeletedDirectory, fullPath);
                 }
@@ -408,16 +409,13 @@ namespace Kudu.Services.FetchHelpers
             if (change.IsFile)
             {
                 // return "1/1/1601 12:00:00 AM" when file not existed
-                DateTime lastWriteTime = File.GetLastWriteTimeUtc(fullPath);
+                DateTime lastWriteTime = FileSystemHelpers.GetLastWriteTimeUtc(fullPath);
                 if (lastWriteTime != change.LastModifiedUtc)
                 {
                     string parentDir = Path.GetDirectoryName(fullPath);
-                    if (!Directory.Exists(parentDir))
-                    {
-                        Directory.CreateDirectory(parentDir);
-                    }
+                    FileSystemHelpers.EnsureDirectory(parentDir);
 
-                    if (File.Exists(fullPath))
+                    if (FileSystemHelpers.FileExists(fullPath))
                     {
                         TraceMessage("Updating file {0} ...", fullPath);
                     }
@@ -440,7 +438,7 @@ namespace Kudu.Services.FetchHelpers
                         }
                     }
 
-                    File.SetLastWriteTimeUtc(fullPath, change.LastModifiedUtc);
+                    FileSystemHelpers.SetLastWriteTimeUtc(fullPath, change.LastModifiedUtc);
                 }
                 else
                 {
@@ -449,19 +447,20 @@ namespace Kudu.Services.FetchHelpers
             }
             else
             {
-                if (Directory.Exists(fullPath))
+                if (FileSystemHelpers.DirectoryExists(fullPath))
                 {
                     TraceMessage("Updating directory {0} ...", fullPath);
                 }
                 else
                 {
                     TraceMessage("Creating directory {0} ...", fullPath);
-                    Directory.CreateDirectory(fullPath);
+                    FileSystemHelpers.CreateDirectory(fullPath);
                 }
 
-                if (Directory.GetLastWriteTimeUtc(fullPath) != change.LastModifiedUtc)
+
+                if (FileSystemHelpers.GetDirectoryLastWriteTimeUtc(fullPath) != change.LastModifiedUtc)
                 {
-                    Directory.SetLastWriteTimeUtc(fullPath, change.LastModifiedUtc);
+                    FileSystemHelpers.SetDirectoryLastWriteTimeUtc(fullPath, change.LastModifiedUtc);
                 }
             }
         }
