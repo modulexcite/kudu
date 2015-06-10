@@ -16,7 +16,7 @@ using Kudu.Core.Tracing;
 
 namespace Kudu.Services.FetchHelpers
 {
-    internal class OneDriveHelper
+    public class OneDriveHelper
     {
         private const string JsonMediaType = "application/json";
         private const string FormUrlEncodedMediaType = "application/x-www-form-urlencoded";
