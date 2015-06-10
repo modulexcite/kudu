@@ -24,6 +24,7 @@ namespace Kudu.Services.FetchHelpers
         private const string CursorKey = "onedrive_cursor";
         private const int DefaultBufferSize = 8192; // From http://msdn.microsoft.com/en-us/library/tyhc0kft.aspx
         private const int MaxRetryCount = 3;
+        private const int MaxFilesPerSeconds = 5;
 
         private readonly ITracer _tracer;
         private readonly IDeploymentSettingsManager _settings;
@@ -295,6 +296,7 @@ namespace Kudu.Services.FetchHelpers
             int successCount = 0;
 
             using (var sem = new SemaphoreSlim(initialCount: System.Environment.ProcessorCount, maxCount: System.Environment.ProcessorCount))
+            using (var filesPerSecLimiter = new RateLimiter(MaxFilesPerSeconds, TimeSpan.FromSeconds(1)))
             {
                 foreach (OneDriveModel.OneDriveChange change in changes)
                 {
@@ -303,6 +305,7 @@ namespace Kudu.Services.FetchHelpers
                         try
                         {
                             await sem.WaitAsync();
+                            await filesPerSecLimiter.ThrottleAsync();
                             bool applied = await ProcessChangeWithRetry(change, accessToken, wwwroot);
                             if (applied)
                             {

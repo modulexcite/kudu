@@ -108,6 +108,7 @@
     <Compile Include="FetchHelpers\OneDriveHelper.cs" />
     <Compile Include="FetchHelpers\OneDriveInfo.cs" />
     <Compile Include="FetchHelpers\OneDriveModel.cs" />
+    <Compile Include="FetchHelpers\RateLimiter.cs" />
     <Compile Include="Infrastructure\HttpResponseMessageExtensions.cs" />
     <Compile Include="Infrastructure\LowerCaseFormatterConfigAttribute.cs" />
     <Compile Include="Diagnostics\ProcessController.cs" />
