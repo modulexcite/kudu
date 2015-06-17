@@ -62,6 +62,9 @@ namespace Kudu.Services.FetchHelpers
                 return;
             }
 
+            string hoststarthtml = Path.Combine(_environment.WebRootPath, Constants.HostingStartHtml);
+            FileSystemHelpers.DeleteFileSafe(hoststarthtml);
+
             using (_tracer.Step("Applying {0} changes ...", changes.Count))
             {
                 LogMessage(Resources.OneDriveApplyingChanges, changes.Count);
@@ -356,7 +359,14 @@ namespace Kudu.Services.FetchHelpers
             if (!change.IsDeleted)
                 return;
 
-            string fullPath = Path.Combine(wwwroot, change.Path);
+            string changePath = RemoveRootFromPath(change.Path);
+            if (changePath == null)
+            {
+                TraceMessage("Ignore root folder {0}", change.Path);
+                return;
+            }
+
+            string fullPath = Path.Combine(wwwroot, changePath);
 
             try
             {
@@ -396,7 +406,14 @@ namespace Kudu.Services.FetchHelpers
             if (change.IsDeleted)
                 return;
 
-            string fullPath = Path.Combine(wwwroot, change.Path);
+            string changePath = RemoveRootFromPath(change.Path);
+            if (changePath == null)
+            {
+                TraceMessage("Ignore root folder {0}", change.Path);
+                return;
+            }
+
+            string fullPath = Path.Combine(wwwroot, changePath);
             if (change.IsFile)
             {
                 // return "1/1/1601 12:00:00 AM" when file not existed
@@ -480,6 +497,22 @@ namespace Kudu.Services.FetchHelpers
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// <para>We sync content under "https://api.onedrive.com/v1.0/drive/special/approot:/folder" to wwwroot</para>
+        /// <para>File path in OneDrive start with root folder, e.g folder\index.html</para>
+        /// <para>When downloaded to wwwroot, we should see wwwroot\index.html</para>
+        /// </summary>
+        private static string RemoveRootFromPath(string path)
+        {
+            int slashIndex = path.IndexOf('\\');
+            if (slashIndex >= 0)
+            {
+                return path.Substring(slashIndex + 1);
+            }
+
+            return null;
         }
 
         internal class ApplyResult
